@@ -1,0 +1,237 @@
+#include<iostream>
+using namespace std;
+const char *crt = "\n---------------------------\n";
+
+class Ispit
+{
+	char* _predmet;
+	char _datumOdrzavanja[12]; //
+	char _vrijemeOdrzavanja[6]; // poèetak ispita
+	int _trajanje; //trajanje ispita u minutama
+	int _maxBrojBodova;
+	double _rezultat; //procentualni rezultat ispita
+public:
+
+	Ispit(const char* predmet,const  char* datumOdrzavanja,const  char* vrijemeOdrzavanja, int trajanje)
+	{
+		int vel = strlen(predmet) + 1;
+		_predmet = new char[vel];
+		strcpy_s(_predmet, vel, predmet);
+
+		strncpy_s(_datumOdrzavanja, datumOdrzavanja, _TRUNCATE);
+		strncpy_s(_vrijemeOdrzavanja, vrijemeOdrzavanja, _TRUNCATE);
+
+		_trajanje = trajanje;
+
+	}
+
+	~Ispit()
+	{
+		delete[] _predmet;
+		_predmet = NULL;
+	}
+
+};
+
+template <class T1, class T2, int max>
+class Kolekcija
+{
+	T1 _elementi1[max];
+	T2 _elementi2[max];
+	int _trenutno;
+public:
+	//Implementirati potrebne funkcije za rad sa kolekcijom
+};
+
+class PismeniIspit
+{
+	Kolekcija<char*, int, 50>* _pitanja; //kolekcija pitanja sa brojem bodova
+	Kolekcija<char*, int, 50> _odgovori; //kolekcija odgovora sa brojem osvojenih bodova
+	int _brTacnihOdgovora;
+	int _brOsvojenihBodova;
+public:
+
+	//Konstruktor i destruktor funkcije
+
+	//Konstruktor kopije
+
+	//Operator() za dodavanje pitanja u kolekciju uz pripadajuæi broj bodova.
+	//Ispit ne smije sadržavati ista pitanja. Broj bodova na jednom pitanju ne smije biti negativan.
+
+	//Operator+= za dodavanje odgovora na pitanje. Odgovori se dodaju u redoslijedu dodavanja pitanja.
+	//Broj osvojenih bodova se inicijalno postavlja na 0. Moguæe je dodati i prazan tekst kao odgovor.
+
+	//Funkciju za ocjenu taènog odgovora koja kao parametar prima redni broj pitanja u kolekciji i taèan odgovor. 
+	//Funkcija treba da pronaðe odgovor na traženo pitanje, te da taj odgovor uporedi sa taènim odgovorom i postavi
+	//osvojene bodove. Student može osvojiti 0 ili maksimalan broj bodova na pitanju. U skladu sa rezultatom
+	//provjere postaviti vrijednosti odgovarajuæih atributa.
+};
+
+class PrakticniIspit
+{
+	Kolekcija<char*, char*, 3> _alati; //potrebni alati i njihove verzije, npr. alat "Visual Studio", verzija "2013"
+	char* _zadatak; //tekst zadatka
+	bool _zadovoljeno; //true ako je student zadovoljio na ispitu, u suprotnom false
+public:
+	//Na osnovu prethodne implementacije klase PismeniIspit osmisliti i implementirati
+	//potrebne funkcije za rad sa klasom PrakticniIspit.
+};
+
+int main()
+{
+	//Testirati sve dostupne funkcionalnosti putem datih kolekcija.
+	//Drugi parametar kolekcije predstavlja broj indeksa studenta.
+
+	  //Testirati sve dostupne funkcionalnosti putem datih kolekcija.
+	//Drugi parametar kolekcije predstavlja broj indeksa studenta.
+	const char *studenti[] = { "IB150219","IB150229","IB150239","IB150249","IB150259","IB150269" };
+
+	Kolekcija<PismeniIspit,const char*, 100> _pismeniIspiti;
+	PismeniIspit smaP("SMA", "12.1.2016", "12:00", 30);
+
+	_pismeniIspiti.AddElement(smaP, studenti[0]);// studenti koji su polagali sma, student1
+	_pismeniIspiti.AddElement(smaP, studenti[1]);// studenti koji su polagali sma, student2
+	_pismeniIspiti.AddElement(smaP, studenti[2]);//         PISMENO                      3
+
+	Kolekcija<PrakticniIspit, const char*, 100> _prakticniIspiti;
+	PrakticniIspit smaR("SMA", "17.1.2016", "13:00", 120, 100, "Poslati enrkiptovan mail pomocu navedenih alata");
+
+	_prakticniIspiti.AddElement(smaR, studenti[3]);//           polagali          student4
+	_prakticniIspiti.AddElement(smaR, studenti[4]);//           PRAKTICNO         student5
+	_prakticniIspiti.AddElement(smaR, studenti[5]);//                             student6
+	_prakticniIspiti.AddElement(smaR, studenti[0]);//                             student1
+
+#pragma region TestiranjePismeno
+#pragma region Student1
+	_pismeniIspiti[1]("Koji je port za telnet", 10);//pitanja na testu iz sma za studenta 1  (IB150219)
+	_pismeniIspiti[1] += "23";                      //Njegov odgovor na pitanje
+	_pismeniIspiti[1]("Koji je port za SSH", 10);
+	_pismeniIspiti[1] += "22";                      //Njegov odgovor na pitanje
+	_pismeniIspiti[1]("Koji je port za DNS", 10);
+	_pismeniIspiti[1] += "53";
+	_pismeniIspiti[1]("Koji je port za HTTPS", 10);
+	_pismeniIspiti[1] += "443";
+	_pismeniIspiti[1]("Koji je port za HTTP", 10);
+	_pismeniIspiti[1] += "80";
+	_pismeniIspiti[1]("Koji su portovi za DHCP", 20);
+	_pismeniIspiti[1] += "67 68";
+	_pismeniIspiti[1]("Koji su portovi za FTP", 20);
+	_pismeniIspiti[1] += "20 21";
+
+	_pismeniIspiti[1].ocijeniPitanje(1, "23");   // (redni broj pitanja, Tacan odgovor na to pitanje)
+	_pismeniIspiti[1].ocijeniPitanje(2, "22");   // (redni broj pitanja, Tacan odgovor na to pitanje)
+	_pismeniIspiti[1].ocijeniPitanje(3, "53");
+	_pismeniIspiti[1].ocijeniPitanje(4, "443");
+	_pismeniIspiti[1].ocijeniPitanje(5, "80");
+	_pismeniIspiti[1].ocijeniPitanje(6, "67 68");
+	_pismeniIspiti[1].ocijeniPitanje(7, "20 21");
+#pragma endregion
+#pragma region Student2
+	_pismeniIspiti[2]("Koji je port za telnet", 10);//pitanja koja su dosla za studenta 2  (IB150229)
+	_pismeniIspiti[2] += "23";                      //Njegov odgovor na pitanje
+	_pismeniIspiti[2]("Koji je port za SSH", 10);
+	_pismeniIspiti[2] += "22";                      //Njegov odgovor na pitanje
+	_pismeniIspiti[2]("Koji je port za DNS", 10);
+	_pismeniIspiti[2] += "53";
+	_pismeniIspiti[2]("Koji je port za HTTPS", 10);
+	_pismeniIspiti[2] += "999"; // pogresan
+	_pismeniIspiti[2]("Koji je port za HTTP", 10);
+	_pismeniIspiti[2] += "999"; // pogresan
+	_pismeniIspiti[2]("Koji su portovi za DHCP (napisite sa razmakom, bez zareza)", 20);
+	_pismeniIspiti[2] += "67 68";
+	_pismeniIspiti[2]("Koji su portovi za FTP (napisite sa razmakom, bez zareza)", 20);
+	_pismeniIspiti[2] += "20 21";
+
+	_pismeniIspiti[2].ocijeniPitanje(1, "23");
+	_pismeniIspiti[2].ocijeniPitanje(2, "22");
+	_pismeniIspiti[2].ocijeniPitanje(3, "53");
+	_pismeniIspiti[2].ocijeniPitanje(4, "443");
+	_pismeniIspiti[2].ocijeniPitanje(5, "80");
+	_pismeniIspiti[2].ocijeniPitanje(6, "67 68");
+	_pismeniIspiti[2].ocijeniPitanje(7, "20 21");
+#pragma endregion
+#pragma region Student3
+	_pismeniIspiti[3]("Koji je port za telnet", 10);//pitanja koja su dosla za studenta 2  (IB150229)
+	_pismeniIspiti[3] += "23";                      //Njegov odgovor na pitanje
+	_pismeniIspiti[3]("Koji je port za SSH", 10);
+	_pismeniIspiti[3] += "22";                      //Njegov odgovor na pitanje
+	_pismeniIspiti[3]("Koji je port za DNS", 10);
+	_pismeniIspiti[3] += "53";
+	_pismeniIspiti[3]("Koji je port za HTTPS", 10);
+	_pismeniIspiti[3] += "999"; // pogresan
+	_pismeniIspiti[3]("Koji je port za HTTP", 10);
+	_pismeniIspiti[3] += "999"; // pogresan
+	_pismeniIspiti[3]("Koji su portovi za DHCP", 10);
+	_pismeniIspiti[3] += "67 68";
+	_pismeniIspiti[3]("Koji su portovi za FTP", 10);
+	_pismeniIspiti[3] += "20 21";
+	_pismeniIspiti[3]("Koji je port za SMTP", 20);
+	_pismeniIspiti[3] += "25";
+	_pismeniIspiti[3]("Koji su portovi za port za SNMP", 20);
+	_pismeniIspiti[3] += "161 162";
+
+	_pismeniIspiti[3].ocijeniPitanje(1, "23");          // tacni odgovori
+	_pismeniIspiti[3].ocijeniPitanje(2, "22");          //\   /
+	_pismeniIspiti[3].ocijeniPitanje(3, "53");          // \ /
+	_pismeniIspiti[3].ocijeniPitanje(4, "443");         //  V  
+	_pismeniIspiti[3].ocijeniPitanje(5, "80");
+	_pismeniIspiti[3].ocijeniPitanje(6, "67 68");
+	_pismeniIspiti[3].ocijeniPitanje(7, "20 21");
+	_pismeniIspiti[3].ocijeniPitanje(8, "25");
+	_pismeniIspiti[3].ocijeniPitanje(9, "161 162");
+#pragma endregion
+#pragma region RezultatiPismeno
+	cout << crt << "Rezultati pismenih ispita : " << crt << crt;
+	for (int i = 0; i < 3; i++)
+	{
+		cout << _pismeniIspiti.getElement2(i + 1) << crt; //
+		cout << _pismeniIspiti[i + 1] << crt; // i+1 zato sto vraca-- _element1[lokacija-1];
+
+	}
+#pragma endregion
+#pragma endregion  
+
+#pragma region TestiranjePrakticno
+
+
+	//Student 4
+	_prakticniIspiti[1]("gpg4win", "2.3.3");
+	_prakticniIspiti[1]("Outlook Desktop App", "2016");
+	system("color 0f");
+
+
+	//Student 5
+	_prakticniIspiti[2]("K-9 Mail", "Google Play Latest");
+	_prakticniIspiti[2]("OpenKeyChain", "Google Play Latest");
+	system("color f0");
+
+	//Student 6
+	_prakticniIspiti[3]("K-9 Mail", "Google Play Latest");
+	_prakticniIspiti[3]("OpenKeyChain", "Google Play Latest");
+	system("color 0f");
+
+
+	//Student 1
+	_prakticniIspiti[4]("K-9 Mail", "Google Play Latest");
+	_prakticniIspiti[4]("PGP", "Google Play Latest");
+	system("color f0");
+
+	cout << crt << "Ocjenjivanje prakticnih ispita: " << crt;
+	for (int i = 0; i < _prakticniIspiti.getTrenutno(); i++)
+	{
+		system("color 0f");
+		_prakticniIspiti[i + 1].ocijeniTest(_prakticniIspiti.getElement2(i + 1));
+		system("color f0");
+		cout << crt;
+	}
+
+	cout << crt << "Rezultati prakticnih ispita: " << crt;
+	for (int i = 0; i < _prakticniIspiti.getTrenutno(); i++)
+	{
+		cout << _prakticniIspiti[i + 1] << crt;
+	}
+#pragma endregion
+
+
+	return 0;
+}

@@ -1,0 +1,484 @@
+#include<iostream>
+using namespace std;
+
+class Uposlenik {
+	int _sifra; //Automatski uvecavati za 1 za svakog novog uspolenika.
+	char _ime[30];
+	char _prezime[30];
+	char* _radnoMjesto;
+	static const char* _kompanija;
+	static int _brojUposlenih;
+public:
+
+	Uposlenik() {
+		_sifra = 0;
+		strcpy_s(_ime, 30, "----");
+		strcpy_s(_prezime, 30, "----");
+		_radnoMjesto = nullptr;
+
+	}
+	//Implementirati potrebne konstruktor i destruktor funkcije
+	Uposlenik(const char* ime, const char* prezime, const char* radnoMjesto)
+	{
+		_sifra = ++_brojUposlenih;
+		strncpy_s(_ime, ime, _TRUNCATE);
+		strncpy_s(_prezime, prezime, _TRUNCATE);
+
+		int vel = strlen(radnoMjesto) + 1;
+		_radnoMjesto = new char[vel];
+		strcpy_s(_radnoMjesto, vel, radnoMjesto);
+
+
+	}
+	Uposlenik(Uposlenik &u) {
+		_sifra = u.GetSifra();
+		strcpy_s(_ime, 30, u._ime);
+		strcpy_s(_prezime, 30, u._prezime);
+		_radnoMjesto = new char[strlen(u._radnoMjesto) + 1];
+		strcpy_s(_radnoMjesto, strlen(u._radnoMjesto) + 1, u._radnoMjesto);
+	}
+	~Uposlenik()
+	{
+		delete[] _radnoMjesto;
+		_radnoMjesto = NULL;
+
+	}
+	bool IstiUposlenik(Uposlenik *u) {
+		if (_sifra == u->_sifra && strcmp(_ime, u->_ime) == 0 && strcmp(_prezime, u->_prezime) == 0 && strcmp(_radnoMjesto, u->_radnoMjesto) == 0)
+			return true;
+		return false;
+	}
+	int GetSifra() {
+		return _sifra;
+	}
+	char *GetIme() {
+		return _ime;
+	}
+	int GetBrojUposlenih() {
+		return _brojUposlenih;
+	}
+
+	void Info()
+	{
+		cout << "Sifra: " << _sifra << endl;
+		cout << "Ime i prezime: " << _ime << " " << _prezime << endl;
+		cout << "Radno mjesto: " << _radnoMjesto << endl;
+	}
+	void Kopiraj(Uposlenik &u) {
+		_sifra = u.GetSifra();
+		strcpy_s(_ime, 30, u._ime);
+		strcpy_s(_prezime, 30, u._prezime);
+		_radnoMjesto = new char[strlen(u._radnoMjesto) + 1];
+		strcpy_s(_radnoMjesto, strlen(u._radnoMjesto) + 1, u._radnoMjesto);
+	}
+
+};
+
+const char* Uposlenik::_kompanija = "FIT";
+int Uposlenik::_brojUposlenih = 0;
+
+class Aktivnost {
+	char* _naziv;
+	bool _zavrsena;
+	int* _trajanje; //Izrazeno u danima
+	Uposlenik* _uposlenici[5];
+
+public:
+	//Implementirati potrebne konstruktor i destruktor funkcije
+	Aktivnost() {
+		//strcpy_s(_naziv, 10,"----");
+		_naziv = nullptr;
+		_zavrsena = false;
+		_trajanje = new int(0);
+		for (int i = 0; i < 5; i++)
+		{
+			_uposlenici[i] = nullptr;
+		}
+	}
+	Aktivnost(const char *naziv, int trajanje) {
+		_naziv = new char[strlen(naziv) + 1];
+		strcpy_s(_naziv, strlen(naziv) + 1, naziv);
+		_zavrsena = false;
+		_trajanje = new int(trajanje);
+		for (int i = 0; i < 5; i++)
+		{
+			_uposlenici[i] = nullptr;
+		}
+	}
+	~Aktivnost() {
+		delete[]_naziv;
+		delete _trajanje;
+
+		RemoveAll();
+
+	}
+	void Kopiraj(Aktivnost &a) {
+		_naziv = new char[strlen(a._naziv) + 1];
+		strcpy_s(_naziv, strlen(a._naziv) + 1, a._naziv);
+		_zavrsena = false;
+		_trajanje = new int(0);
+		Uposlenik *uposlenici = new Uposlenik[5];
+		uposlenici = a.GetUposlenici();
+		for (int i = 0; i < a.GetBrojUposlenika(); i++)
+		{
+			_uposlenici[i] = new Uposlenik(uposlenici[i]);
+		}
+	}
+	Uposlenik *GetUposlenici() {
+		Uposlenik *uposlenici = new Uposlenik; int brojac = 0;
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr) {
+				if (brojac == 0) {
+					uposlenici = new Uposlenik[brojac + 1];
+					uposlenici[brojac].Kopiraj(*_uposlenici[i]);
+					brojac++;
+				}
+				else {
+					Uposlenik *temp = new Uposlenik[brojac + 1];
+					for (int i = 0; i < brojac; i++)
+					{
+						temp[i].Kopiraj(uposlenici[i]);
+					}
+					temp[brojac].Kopiraj(*_uposlenici[i]);
+					if (uposlenici != nullptr)
+						delete[]uposlenici;
+					uposlenici = temp;
+					brojac++;
+				}
+			}
+
+		}
+		return uposlenici;
+	}
+	int GetBrojUposlenika() {
+		int brojac = 0;
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr)
+				brojac++;
+		}
+		return brojac;
+	}
+	Uposlenik *GetUposlenik(int index) {
+		return _uposlenici[index];
+	}
+	bool AddUposlenik(Uposlenik *u) {
+		if (_zavrsena) {
+			cout << "Aktivnost zavrsena." << endl;
+			return false;
+		}
+
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr && _uposlenici[i]->IstiUposlenik(u))
+			{
+				cout << "Ne mozete dodati istog uposlenika." << endl;
+				return false;
+			}
+		}
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] == nullptr) {
+				_uposlenici[i] = new Uposlenik(*u);
+				return true;
+			}
+		}
+	}
+	bool RemoveUposlenik(int sifra) {
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr) {
+				if (_uposlenici[i]->GetSifra() == sifra) {
+					char tmp[20];
+					strcpy_s(tmp, 20, _uposlenici[i]->GetIme());
+					delete _uposlenici[i];
+					_uposlenici[i] = nullptr;
+
+					cout << "Uposlenik " << tmp << " uspjesno uklonjen." << endl;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	void RemoveAll() {
+		for (int i = 0; i < GetBrojUposlenika(); i++)
+		{
+			if (_uposlenici[i] != nullptr)
+			{
+				delete _uposlenici[i];
+			}
+
+		}
+	}
+	bool IstaAktivnost(const char *nazivAktivnosti) {
+		if (strcmp(_naziv, nazivAktivnosti) == 0)
+			return true;
+		return false;
+	}
+	char *GetNaziv() {
+		return _naziv;
+	}
+	void ZavrsiAktivnost() {
+		_zavrsena = true;
+	}
+	bool GetZavrsena() {
+		return _zavrsena;
+	}
+	void Info() {
+		cout << "Naziv->" << _naziv << endl;
+		cout << "Trajanje->" << *_trajanje << " mjeseci." << endl;
+		cout << "Uposlenici: " << endl;
+		for (int i = 0; i < 5; i++)
+		{
+			if (_uposlenici[i] != nullptr)
+				_uposlenici[i]->Info();
+		}
+
+	}
+};
+
+class Projekat {
+	char* _naziv;
+	char* _oblast;
+	int _trajanje; //Izrazeno u mjesecima
+	Aktivnost* _aktivnosti;
+	int _brojAktivnosti;
+public:
+	Projekat(const char *naziv, const char *oblast, int trajanje) {
+		_naziv = new char[strlen(naziv) + 1];
+		strcpy_s(_naziv, strlen(naziv) + 1, naziv);
+		_oblast = new char[strlen(oblast) + 1];
+		strcpy_s(_oblast, strlen(oblast) + 1, oblast);
+		_trajanje = trajanje;
+		_aktivnosti = nullptr;
+		_brojAktivnosti = 0;
+	}
+	bool AddAktivnost(Aktivnost *a) {
+		for (int i = 0; i < _brojAktivnosti; i++)
+		{
+			if (_aktivnosti[i].IstaAktivnost(a->GetNaziv()))
+			{
+				cout << "Ne mozete dodati istu aktivnost." << endl;
+				return false;
+			}
+		}
+		if (_brojAktivnosti == 0) {
+			_aktivnosti = new Aktivnost[_brojAktivnosti + 1];
+			_aktivnosti[_brojAktivnosti].Kopiraj(*a);
+			_brojAktivnosti++;
+		}
+		else {
+			Aktivnost *temp = new Aktivnost[_brojAktivnosti + 1];
+			for (int i = 0; i < _brojAktivnosti; i++)
+			{
+				temp[i].Kopiraj(_aktivnosti[i]);
+			}
+			temp[_brojAktivnosti].Kopiraj(*a);
+			if (_aktivnosti != nullptr)
+				delete[] _aktivnosti;
+			_aktivnosti = temp;
+			_brojAktivnosti++;
+		}
+	}
+	bool PostaviZavrseno(const char *nazivAktivnosti) {
+		for (int i = 0; i < _brojAktivnosti; i++)
+		{
+			if (strcmp(_aktivnosti[i].GetNaziv(), nazivAktivnosti) == 0) {
+				_aktivnosti[i].ZavrsiAktivnost();
+				cout << "Aktivnost zavrsena." << endl;
+				return true;
+			}
+		}
+		cout << "Ta aktivnost ne postoji." << endl;
+		return false;
+	}
+	void DodijeliUposlenika(const char *nazivAktivnosti, Uposlenik *u) {
+		for (int i = 0; i < _brojAktivnosti; i++)
+		{
+			if (_aktivnosti[i].IstaAktivnost(nazivAktivnosti)) {
+				_aktivnosti[i].AddUposlenik(u);
+			}
+		}
+	}
+	void SviUposlenici(const char *nazivAktivnosti) {
+		for (int i = 0; i < _brojAktivnosti; i++)
+		{
+			if (strcmp(_aktivnosti[i].GetNaziv(), nazivAktivnosti) == 0) {
+				Uposlenik *uposlenici = _aktivnosti[i].GetUposlenici();
+				for (int j = 0; j < _aktivnosti[i].GetBrojUposlenika(); j++)
+				{
+
+					uposlenici[j].Info();
+				}
+			}
+		}
+	}
+	void UkloniUposlenika(const char *nazivAktivnosti, int sifra) {
+		for (int i = 0; i < _brojAktivnosti; i++)
+		{
+			if (strcmp(_aktivnosti[i].GetNaziv(), nazivAktivnosti) == 0) {
+				Uposlenik *uposlenici = _aktivnosti[i].GetUposlenici();
+				for (int j = 0; j < 5; j++)
+				{
+					if (uposlenici[j].GetSifra() == sifra) {
+						_aktivnosti[i].RemoveUposlenik(sifra);
+
+					}
+
+				}
+			}
+		}
+	}
+	void UkloniSveUposlenike(const char *nazivAktivnosti) {
+		for (int i = 0; i < _brojAktivnosti; i++)
+		{
+			if (_aktivnosti[i].IstaAktivnost(nazivAktivnosti)) {
+				_aktivnosti[i].RemoveAll();
+			}
+		}
+	}
+	//Funkciju koja pronalazi uposlenika sa najvecim brojem angazmana na aktivnostima.
+	//Funkciju koja pronalazi 3 uposlenika koja su angazovana na najvecem broju nezavrsenih aktivnosti.
+	//Funkciju koja ispisuje sve zavrsene aktivnosti na projektu.
+	void InfoAktivnosti() {
+		for (int i = 0; i < _brojAktivnosti; i++)
+		{
+			cout << "\n\nZAVRSENE AKTIVNOSTI: " << endl;
+			if (!_aktivnosti[i].GetZavrsena()) {
+				_aktivnosti[i].Info();
+			}
+		}
+	}
+	int GetBrojAktivnosti() {
+		return _brojAktivnosti;
+	}
+	Aktivnost * GetAktivnosti() {
+		return _aktivnosti;
+	}
+
+};
+
+
+/*Kreirati globalnu funkciju koja pronalazi najuspjesnijeg usposlenika na projektima proslijedjenim kao parametar.
+Uposlenik se smatra najuspjesnijim ako je angazovan na najvecem broju zavrsenih aktivnosti. Ako vise uposlenika
+ima isti broj zavrsenih aktivnosti, uspjesnijim se smatra onaj cije su aktivnosti trajale duze.
+*/
+
+Uposlenik *PronadjiNajuspjesnijeg(Projekat p1) {
+	int uposlenik[5] = { 0,0,0,0,0 };
+	Aktivnost *aktivnosti = p1.GetAktivnosti();
+	Uposlenik *uposlenici = nullptr; int brojac = 0;
+	bool isti = false;
+	for (int i = 0; i < p1.GetBrojAktivnosti(); i++)
+	{
+		for (int j = 0; j < aktivnosti[i].GetBrojUposlenika(); j++)
+		{
+			isti = false;
+			for (int k = 0; k < brojac; k++)
+			{
+				if (uposlenici[k].IstiUposlenik(aktivnosti[i].GetUposlenik(j)))
+					isti = true;
+			}
+			if (!isti) {
+				if (brojac == 0) {
+					uposlenici = new Uposlenik[brojac + 1];
+					uposlenici[brojac].Kopiraj(*aktivnosti[i].GetUposlenik(j));
+					brojac++;
+				}
+				else {
+					Uposlenik *novi = new Uposlenik[brojac + 1];
+					for (int i = 0; i < brojac; i++)
+					{
+						novi[i].Kopiraj(uposlenici[i]);
+					}
+					novi[brojac].Kopiraj(*aktivnosti[i].GetUposlenik(j));
+					delete[] uposlenici;
+					uposlenici = novi;
+					brojac++;
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < p1.GetBrojAktivnosti(); i++)
+	{
+		if (!aktivnosti[i].GetZavrsena()) {
+			for (int j = 0; j < aktivnosti[i].GetBrojUposlenika(); j++)
+			{
+				if (uposlenici[j].IstiUposlenik(&uposlenici[0]))
+					uposlenik[0]++;
+				else if (uposlenici[j].IstiUposlenik(&uposlenici[1]))
+					uposlenik[1]++;
+				else if (uposlenici[j].IstiUposlenik(&uposlenici[2]))
+					uposlenik[2]++;
+				else if (uposlenici[j].IstiUposlenik(&uposlenici[3]))
+					uposlenik[3]++;
+				else
+					uposlenik[4]++;
+			}
+		}
+	}
+	int najbolji = 0;
+	for (int i = 1; i < 5; i++)
+	{
+		najbolji = uposlenik[0];
+		if (uposlenik[i] > najbolji)
+			najbolji = uposlenik[i];
+	}
+	if (najbolji == uposlenik[0])
+		return &uposlenici[0];
+	if (najbolji == uposlenik[1])
+		return &uposlenici[1];
+	if (najbolji == uposlenik[2])
+		return &uposlenici[2];
+	if (najbolji == uposlenik[3])
+		return &uposlenici[3];
+	if (najbolji == uposlenik[4])
+		return &uposlenici[4];
+
+
+
+
+
+}
+
+int main()
+{
+	//Testirati sve dostupne funkcionalnosti
+	Uposlenik u1("Denis", "Music", "FIT"),
+		u2("Jasmin", "Azemovic", "FIT"),
+		u3("Zanin", "Vejzovic", "FIT"),
+		u4("Mohamed", "El-Zayat", "FIT"),
+		u5("Indira", "Hamulic", "FIT");
+	Uposlenik u6(u5);
+	Aktivnost Programiranje("Programiranje", 3), Mreze("Mreze", 3);
+	Programiranje.AddUposlenik(&u1);
+	Programiranje.AddUposlenik(&u2);
+	Mreze.AddUposlenik(&u1);
+
+	Mreze.AddUposlenik(&u3);
+	Mreze.AddUposlenik(&u4);
+	Mreze.AddUposlenik(&u6);
+
+	Projekat Nastava("Nastava", "Obrazovanje", 10);
+	Nastava.AddAktivnost(&Programiranje);
+	Nastava.AddAktivnost(&Mreze);
+	Nastava.DodijeliUposlenika("Programiranje", &u5);
+	cout << "Svi Uposlenici aktivnosti Programiranje: " << endl;
+	Nastava.SviUposlenici("Programiranje");
+	Nastava.UkloniUposlenika("Programiranje", 5);
+	cout << "Svi Uposlenici aktivnosti Programiranje: " << endl;
+	Nastava.SviUposlenici("Programiranje");
+	cout << "\n\nSvi Uposlenici aktivnosti Mreze: " << endl;
+	Nastava.SviUposlenici("Mreze");
+	Nastava.InfoAktivnosti();
+	cout << "\n\nNajuspjesniji uposlenik na projektu: ";
+	Uposlenik *najUspjesniji = PronadjiNajuspjesnijeg(Nastava);
+	najUspjesniji->Info();
+
+	system("pause");
+	return 0;
+}
+

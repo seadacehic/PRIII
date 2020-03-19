@@ -1,0 +1,356 @@
+#include<iostream>
+using namespace std;
+const char *crt = "\n------------------------------------------\n";
+
+class Vrijeme
+{
+	int _sati;
+	int _minute;
+	int _sekunde;
+public:
+	Vrijeme(int sati = 0, int minute = 0, int sekunde = 0) {
+		_sati = sati;
+		_minute = minute;
+		_sekunde = sekunde;
+	}
+	//Preklopiti operator << za ispis ojekata tipa Vrijeme
+	friend ostream& operator<<(ostream&, Vrijeme);
+	friend Vrijeme operator+(Vrijeme&, int);
+
+	Vrijeme& operator+=(int noveMinute)
+	{
+		*this = *this + noveMinute;
+		//_minute = _minute + noveMinute;
+		return *this;
+	}
+	//Vrijeme operator+(int noveMinute) {
+	//	return Vrijeme((_sati*60+noveMinute) / 60, (noveMinute+_minute) % 60, _sekunde);
+	//}
+	friend bool operator<(Vrijeme, Vrijeme);
+	friend bool operator>(Vrijeme, Vrijeme);
+};
+ostream& operator<<(ostream& COUT, Vrijeme vrijeme)
+{
+	if (vrijeme._sekunde == 0)
+		return COUT << vrijeme._sati << ":" << vrijeme._minute;
+	return COUT << vrijeme._sati << ":" << vrijeme._minute << ":" << vrijeme._sekunde;
+}
+Vrijeme operator+(Vrijeme& v, int noveMinute)
+{
+	int minutaUkupno = v._sati * 60 + v._minute + noveMinute;
+	return Vrijeme(minutaUkupno / 60, minutaUkupno % 60, v._sekunde);
+}
+
+ bool operator<( Vrijeme v1, Vrijeme v2)
+{
+	int t1 = v1._sati * 3600 + v1._minute * 60 + v1._sekunde;
+	int t2 = v2._sati * 3600 + v2._minute * 60 + v2._sekunde;
+	return (t1 < t2);
+}
+
+bool operator>(Vrijeme v1, Vrijeme v2)
+{
+	int t1 = v1._sati * 3600 + v1._minute * 60 + v1._sekunde;
+	int t2 = v2._sati * 3600 + v2._minute * 60 + v2._sekunde;
+	return (t1 > t2);
+}
+
+class Let
+{
+	static const  int _oznakaSize = 10;
+	char _oznaka[_oznakaSize];
+	char* _odrediste;
+	int _brIzlazneKapije;
+	Vrijeme _vrijemePolijetanja; //sati i minute
+	int _trajanje; //izraženo u minutama
+	int _kasnjenje; //izraženo u minutama
+
+public:
+	Let() {
+		_odrediste = new char[10];
+		strcpy_s(_oznaka, 10, "nepoznato");
+		_brIzlazneKapije = 0;
+		_trajanje = 0;
+		_kasnjenje = 0;
+	}
+	//Potrebne konstruktor i destruktor funkcije
+	Let(const char* oznaka, const char* odrediste, int brIzlazneKapije, Vrijeme vrijemePolijetanja, int trajanje, int kasnjenje = 0) :
+		_vrijemePolijetanja(vrijemePolijetanja)
+	{
+		strcpy_s(_oznaka, _oznakaSize, oznaka);
+		int size = strlen(odrediste) + 1;
+		_odrediste = new char[size];
+		strcpy_s(_odrediste, size, odrediste);
+		_brIzlazneKapije = brIzlazneKapije;
+		_trajanje = trajanje;
+		_kasnjenje = kasnjenje;
+	}
+	Let(const Let& obj)
+	{
+		strcpy_s(_oznaka, _oznakaSize,obj._oznaka );
+		int size = strlen(obj._odrediste) + 1;
+		_odrediste = new char[size];
+		strcpy_s(_odrediste, size, obj._odrediste);
+		_brIzlazneKapije = obj._brIzlazneKapije;
+		_trajanje = obj._trajanje;
+		_kasnjenje = obj._kasnjenje;
+	}
+	Let& operator=(const Let& obj)
+	{
+		strcpy_s(_oznaka, _oznakaSize, obj._oznaka);
+		int size = strlen(obj._odrediste) + 1;
+		_odrediste = new char[size];
+		strcpy_s(_odrediste, size, obj._odrediste);
+		_brIzlazneKapije = obj._brIzlazneKapije;
+		_trajanje = obj._trajanje;
+		_kasnjenje = obj._kasnjenje;
+		return*this;
+	}
+	~Let()
+	{
+		delete[] _odrediste;
+		_odrediste = nullptr;
+	}
+
+	//Funkciju sa jednim parametrom koja postavlja informaciju o eventualnom kašnjenju na vrijednost zadanu parametrom.
+	void SetKasnjenje(int novoKasnjenje)
+	{
+		_kasnjenje = novoKasnjenje;
+	}
+
+	/*Preklopiti unarni operator "!" putem kojeg je moguæe saznati da li odgovarajuæi let kasni ili ne (vratiti logièku
+	vrijednost "true" u sluèaju kašnjenja, u suprotnom vratiti "false").*/
+	friend bool operator!(const Let&);
+
+	//Funkciju koja kao rezultat vraæa trajanje leta.
+	int GetTrajanjeLeta()
+	{
+		return _trajanje;
+	}
+
+	/*Preklopiti operator + na naèin da omoguæava sabiranje objekata tipa "Let" i cijelog broja, pri
+	èemu se kao rezultat dobiva novi objekat tipa "Let", u kojem je vrijeme polijetanja pomjereno
+	unaprijed za iznos odreðen drugim sabirkom (raèunato u minutama).
+	Takoðer preklopiti i operator "+=" koji osigurava da izraz oblika "X += Y uvijek ima isto znaèenje kao i izraz
+	"X = X + Y" */
+	friend Let operator+(Let, int);
+	Let& operator+=(int noveMinute)
+	{
+		_vrijemePolijetanja = _vrijemePolijetanja + noveMinute;
+		return *this;
+	}
+
+	/* Funkciju kojom je moguæe saznati oèekivano vrijeme polijetanja kada se uraèuna iznos kašnjenja
+	u odnosu na predviðeno vrijeme polijetanja (iskoristiti preklopljeni operator +). */
+	Vrijeme GetOcekivanoVrijemePolijetanja()
+	{
+		return Vrijeme(_vrijemePolijetanja + _kasnjenje);
+	}
+
+	//Funkciju koja vraæa oèekivano vrijeme slijetanja
+	Vrijeme GetOcekivanoVrijemeSlijetanja()
+	{
+		return Vrijeme(_vrijemePolijetanja + _trajanje);
+	}
+
+	/*Preklopiti operator "++" na naèin da pomijera vrijeme polaska za jedan sat unaprijed.
+	Potrebno je podržati i prefiksnu i postfiksnu verziju ovog operatora.*/
+	Let& operator++()
+	{
+		//preinkrement
+		_vrijemePolijetanja + 60;
+		return *this;
+	}
+	Let& operator++(int)
+	{
+		//postinkrement
+		Let temp(_oznaka, _odrediste, _brIzlazneKapije, _vrijemePolijetanja, _trajanje, _kasnjenje);
+		_vrijemePolijetanja += 60;
+		return temp;
+	}
+
+	/*Preklopiti relacione operatore "<" i ">" koji ispituju koji let nastupa ranije, odnosno kasnije.
+	Operator "<" vraæa logièku vrijednost "true" ukoliko polijetanje leta sa lijeve strane nastupa
+	prije polijetanje leta sa desne strane, a u suprotnom vraæa logièku vrijednost "false".
+	Analogno vrijedi za operator ">". Prilikom uporeðivanja treba uzeti u obzir i oèekivano vrijeme kašnjenja,
+	a ne samo planirano vrijeme polijetanja.*/
+	friend bool operator<(Let, Let);
+	friend bool operator>(Let,  Let);
+
+	/*Preklopiti operator "<<" koji treba da podrži ispis objekata tipa "Let" na ekran. U sluèaju da
+	se radi o polijetanju bez kašnjenja, ispis bi trebao da izgleda kako slijedi:
+
+	JFK 156 Atalanta    12:50   19:30   5
+
+	Podaci predstavljaju redom: oznaku leta, naziv odredišta, vrijeme polijetanja, oèekivano
+	vrijeme slijetanja i broj izlazne kapije. U sluèaju da se radi o letu koji kasni, ispis bi trebao izgledati kako slijedi:
+
+	ZGK 932 Zagreb    15:50 (Planirano 15:30, Kasni 20 min)*/
+
+	friend ostream& operator<<(ostream&, Let&);
+
+	//Dodatno
+	char* GetOznakaLeta() { return _oznaka; }
+};
+
+ostream& operator<<(ostream& COUT, Let& let)
+{
+	if (!let) // ako kasni
+		return COUT << let._oznaka << "\t" << let._odrediste << "\t" << let.GetOcekivanoVrijemePolijetanja() << "\t" <<
+		"(Planirano " << let._vrijemePolijetanja << ", kasni " << let._kasnjenje << " min)";
+	return COUT << let._oznaka << "\t" << let._odrediste << "\t" << let.GetOcekivanoVrijemePolijetanja() <<
+		"\t" << let.GetOcekivanoVrijemeSlijetanja() << "\t" << let._brIzlazneKapije;
+	return COUT;
+}
+bool operator!(const Let& let)
+{
+	return let._kasnjenje != 0;
+}
+Let operator+(Let l, int dodatnoMinuta)
+{
+	return Let(l._oznaka, l._odrediste, l._brIzlazneKapije, l._vrijemePolijetanja + dodatnoMinuta, l._trajanje, l._kasnjenje);
+}
+bool operator<(Let l1, Let l2)
+{
+	return l1.GetOcekivanoVrijemePolijetanja() < l2.GetOcekivanoVrijemePolijetanja();
+}
+bool operator>(Let l1, Let l2)
+{
+	return l1.GetOcekivanoVrijemePolijetanja() > l2.GetOcekivanoVrijemePolijetanja();
+}
+
+
+
+
+class RasporedLetova
+{
+	int _brojRegistrovanihLetova;
+	const int _maksimalanBrojLetova;
+	Let*_letovi;
+
+public:
+	RasporedLetova(int maksimalanBrojLetova) : _maksimalanBrojLetova(maksimalanBrojLetova),
+		_letovi(new Let[_maksimalanBrojLetova]), _brojRegistrovanihLetova(0)
+	{}
+	~RasporedLetova()
+	{
+		delete[] _letovi;
+		_letovi = nullptr;
+	}
+
+	/*Preklopiti operator "+=" na naèin da registruje novi let u raspored. Raspored letova u svakom momentu treba biti sortiran
+	prema vremenu polijetanja. Voditi raèuna o maksimalnom	broju letova.  Za potrebe poreðenja vremena polaska letova preklopiti
+	odgovarajuæe operatore u klasi Vrijeme.*/
+	RasporedLetova& operator+=(Let& noviLet) //OVO NE ZNAM RIJESITI			
+	{
+		if (_brojRegistrovanihLetova == _maksimalanBrojLetova)
+			return *this;
+		int noviIndex = 0;
+		for (int i = 0; i < _brojRegistrovanihLetova; i++)
+		{   //usporedjujemo vremena polijetanja kako bi znali na koji cemo index staviti novi let
+			if (_letovi[i].GetOcekivanoVrijemePolijetanja() > noviLet.GetOcekivanoVrijemePolijetanja())
+				noviIndex = i + 1;
+		}
+		//pomjeramo odredjene letove kako bi stavili novi let na ispravan index i na kraju ubacujemo novi let u niz letova
+		for (int i = _brojRegistrovanihLetova; i > noviIndex; i--)
+			_letovi[i] = _letovi[i - 1];
+		_letovi[noviIndex] = noviLet;
+		_brojRegistrovanihLetova++;
+		return *this;
+	}
+
+	/*Preklopiti operator "-=" na naèin da ukljanja registrovani let sa oznakom definisanom putem desnog operanda.
+	Pri tome saèuvati redoslijed prethodno registrovanih letova. */
+	RasporedLetova& operator-=(Let& stariLet)
+	{
+		for (int i = 0; i < _brojRegistrovanihLetova; i++)
+		{
+			if (strcmp(_letovi[i].GetOznakaLeta(), stariLet.GetOznakaLeta()) == 0)
+			{
+				for (int j = i; j < _brojRegistrovanihLetova - 1; j++)
+					_letovi[j] = _letovi[j + 1];
+				_brojRegistrovanihLetova--;
+				return *this;
+			}
+		}
+	}
+
+	//Preklopiti operator "[]" na naèin da vraæa objekat tipa Let na osnovu proslijeðene pozicije u rasporedu (pozicije kreæu od 1).
+	Let& operator[](int index)
+	{
+		if (index > 0 || index <= _brojRegistrovanihLetova)
+		{
+			index--;
+			return _letovi[index];
+		}
+	}
+
+	/*Preklopiti operator "()" na naèin da letu sa definisanom oznakom pomjeri vrijeme polijetanja za vrijednost drugog parametra izraženog
+	u minutama. */
+	RasporedLetova& operator()(const char* oznaka, int dodatneMinute)
+	{
+		for (int i = 0; i < _brojRegistrovanihLetova; i++)
+			if (strcmp(_letovi[i].GetOznakaLeta(), oznaka) == 0)
+			{
+				_letovi[i].SetKasnjenje(dodatneMinute);
+				return *this;
+			}
+		return *this;
+	}
+
+	//Funkciju koja daje prosjeèno trajanje svih pohranjenih letova.
+	float GetProsjecnoTrajanjeLeta()
+	{
+		int suma = 0;
+		for (int i = 0; i < _brojRegistrovanihLetova; i++)
+			suma += _letovi[i].GetTrajanjeLeta();
+		return suma / (float)_brojRegistrovanihLetova;
+	}
+
+	/*Preklopiti operator "<<" koji ispisuje kompletan spisak svih letova, sortiran po oèekivanim vremenima polazaka.
+	Za potrebe poreðenja vremena polaska letova preklopiti odgovarajuæe operatore u klasi Vrijeme. */
+	friend ostream& operator<<(ostream&, RasporedLetova&);
+};
+
+ostream& operator<<(ostream& COUT, RasporedLetova& rasporedLetova)
+{
+	for (int i = rasporedLetova._brojRegistrovanihLetova; i > 0; i--)
+		COUT << rasporedLetova[i] << endl; //mozemo ovako ispisivati zato sto smo definirali operator[]
+	return COUT;
+}
+
+
+int main()
+{
+	Vrijeme jutro(6, 30), prijepodne(10, 15), podne(12, 0), poslijepodne(16, 55), vecer(20, 40), ponoc(0, 0);
+	//cout << prijepodne;
+
+	Let let1("OU3417", "Zagreb  ", 2, poslijepodne, 30);
+	Let let2("OS7603", "Vienna  ", 7, prijepodne, 120);
+	Let let3("TK1022", "Istanbul", 2, jutro, 222);
+	Let let4("LH1731", "Munich  ", 4, ponoc, 230);
+	Let let5("FZ7628", "Dubai   ", 1, podne, 112);
+	Let let6("JU1131", "Belgrade", 5, vecer, 44);
+	Let let7("SK8945", "Ljubljana", 4, poslijepodne, 55);
+	//cout << let5;
+
+	RasporedLetova rasporedLetova(10);
+	rasporedLetova += let1;
+	rasporedLetova += let2;
+	rasporedLetova += let3;
+	rasporedLetova += let4;
+	rasporedLetova += let5;
+	rasporedLetova += let6;
+	rasporedLetova += let7;
+
+	rasporedLetova("JU1131", 45); // == let6.SetKasnjenje(45);  //ovo mozemo napisati jer smo definirali operator()
+
+
+								  /***********************ISPIS******************************/
+
+	cout << crt << "\t::RASPORED LETOVA::" << crt << rasporedLetova << endl;
+	//cout << "\n\nProsjecno trajanje leta je " << (int)rasporedLetova.GetProsjecnoTrajanjeLeta() << " minuta" << endl;
+
+	system("pause");
+	return 0;
+}
