@@ -1,0 +1,397 @@
+#include <iostream>
+#include <conio.h>
+#include <iomanip>
+using namespace std;
+
+//Klasa cuva podatke o jednom prodajnom artiklu
+class Artikal
+{
+	char* _sifra;
+	char* _naziv;
+	double _cijena; //U cijenu nije uracunat PDV
+	int _kolicina; //Stanje na skladištu
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	Artikal(const char * naziv = "N/A",const char * sifra = "N/A", double cijena = 0, int kolicina = 0) : _cijena(cijena), _kolicina(kolicina)
+	{
+		int size = strlen(naziv) + 1;
+		_naziv = new char[size];
+		strcpy_s(_naziv, size, naziv);
+
+		size = strlen(sifra) + 1;
+		_sifra = new char[size];
+		strcpy_s(_sifra, size, sifra);
+	}
+	Artikal(const Artikal & org) : _cijena(org._cijena), _kolicina(org._kolicina)
+	{
+		int size = strlen(org._naziv) + 1;
+		_naziv = new char[size];
+		strcpy_s(_naziv, size, org._naziv);
+
+		size = strlen(org._sifra) + 1;
+		_sifra = new char[size];
+		strcpy_s(_sifra, size, org._sifra);
+	}
+	~Artikal()
+	{
+		if (_naziv != nullptr)
+		{
+			delete[]_naziv;
+			_naziv = nullptr;
+		}
+		if (_sifra != nullptr)
+		{
+			delete[]_sifra;
+			_sifra = nullptr;
+		}
+	}
+	//Preklopiti operator-= na nacin da se stanje na skladištu artikla umanji za
+	//proslijedenu vrijednost.
+	Artikal & operator-=(int value)
+	{
+		if (value > 0 && value <= _kolicina)
+			_kolicina -= value;
+		return *this;
+	}
+	//Preklopiti operator ++ na nacin da se kolicina artikala na stanju uveca za 1.
+	Artikal & operator ++()
+	{
+		_kolicina++;
+		return *this;
+	}
+	Artikal operator ++(int)
+	{
+		Artikal temp(*this);
+		_kolicina++;
+		return temp;
+	}
+	//Preklopiti operator -- na nacin da se kolicina artikala na stanju umanji za 1.
+	Artikal & operator --()
+	{
+		_kolicina--;
+		return *this;
+	}
+	Artikal operator --(int)
+	{
+		Artikal temp(*this);
+		_kolicina--;
+		return temp;
+	}
+	//Preklopiti operator== koji treba da uporedi artikle na osnovu njihove šifre.
+	friend bool operator ==(const Artikal &, const Artikal &);
+	friend bool operator ==(const Artikal &, const char *);
+
+	//Preklopiti operator za ispis podataka o artiklu.
+	friend ostream & operator << (ostream &, const Artikal &);
+
+	int GetKolicina()const
+	{
+		return _kolicina;
+	}
+	double GetCijena()const
+	{
+		return _cijena;
+	}
+	const char * GetNaziv()const
+	{
+		return _naziv;
+	}
+	/*Artikal & operator +=(int kolicina)
+	{
+		_kolicina += kolicina;
+		return *this;
+	}*/
+	Artikal & operator = (const Artikal & right)
+	{
+		if (this != &right)
+		{
+			if (_naziv != nullptr)
+			{
+				delete[]_naziv;
+				_naziv = nullptr;
+			}
+			if (_sifra != nullptr)
+			{
+				delete[]_sifra;
+				_sifra = nullptr;
+			}
+
+			int size = strlen(right._naziv) + 1;
+			_naziv = new char[size];
+			strcpy_s(_naziv, size, right._naziv);
+
+			size = strlen(right._sifra) + 1;
+			_sifra = new char[size];
+			strcpy_s(_sifra, size, right._sifra);
+
+			_cijena = right._cijena;
+
+			_kolicina = right._kolicina;
+		}
+		return *this;
+	}
+};
+
+ostream & operator << (ostream & ispis, const Artikal & obj)
+{
+	if (obj._naziv != nullptr)
+		ispis << obj._naziv;
+	ispis << " [" << obj._cijena << " KM]" << endl;
+	if (obj._sifra != nullptr)
+		ispis << "Sifra artikla: " << obj._sifra << endl;
+	ispis << "Trenutno na stanju: " << obj._kolicina << endl;
+	return ispis;
+}
+bool operator ==(const Artikal & left, const Artikal & right)
+{
+	return strcmp(left._sifra, right._sifra) == 0;
+}
+bool operator ==(const Artikal & artikal, const char *sifra)
+{
+	return strcmp(artikal._sifra, sifra) == 0;
+}
+
+class StavkaRacuna
+{
+	Artikal _artikal;
+	int* _kolicina;
+public:
+	//Potrebne konstruktor i destruktor funkcije
+	StavkaRacuna()
+	{
+		_kolicina = new int(0);
+	}
+	StavkaRacuna(const StavkaRacuna & org) : _artikal(org._artikal)
+	{
+		_kolicina = new int(*org._kolicina);
+	}
+	StavkaRacuna(Artikal artikal, int kolicina = 1) : _artikal(artikal)
+	{
+		_kolicina = new int(kolicina);
+	}
+	~StavkaRacuna()
+	{
+		if (_kolicina != nullptr)
+		{
+			delete _kolicina;
+			_kolicina = nullptr;
+		}
+
+	}
+	//Preklopiti odgovarajuce operatore na osnovu potreba zadatka
+
+	Artikal & GetArtikal()
+	{
+		return _artikal;
+	}
+	int GetKolicina()const
+	{
+		return *_kolicina;
+	}
+	double GetCijena()const
+	{
+		return _artikal.GetCijena();
+	}
+	friend bool operator ==(const StavkaRacuna &, const Artikal &);
+	friend bool operator ==(const StavkaRacuna &, const char *);
+
+	StavkaRacuna & operator+=(int novaKolicina)
+	{
+		*_kolicina += novaKolicina;
+		return *this;
+	}
+
+	StavkaRacuna & operator =(const StavkaRacuna & stavka)
+	{
+		if (this != &stavka)
+		{
+			_artikal = stavka._artikal;
+			*_kolicina = *stavka._kolicina;
+		}
+		return *this;
+	}
+
+	friend ostream & operator << (ostream &, const StavkaRacuna &);
+};
+
+ostream & operator << (ostream & ispis, const StavkaRacuna & obj)
+{
+	ispis << obj._artikal.GetNaziv() << " -- " << obj._artikal.GetCijena() << " KM -- " << *obj._kolicina << endl;
+	return ispis;
+}
+bool operator ==(const StavkaRacuna & stavka, const Artikal & artikal)
+{
+	return stavka._artikal == artikal;
+}
+bool operator ==(const StavkaRacuna & stavka, const char *sifra)
+{
+	return stavka._artikal == sifra;
+}
+const char * crt = "\n-------------------------------------------\n";
+
+class Racun
+{
+	int _brojRacuna;
+	StavkaRacuna _stavke[100];
+	int _brojStavki;
+	double _iznosBezPDV;
+	double _iznosSaPDV;
+	bool _izdato;
+
+	static int BrojRacunaCount; // ovo sam dodao, jer sam htio autoincrement broja racuna
+public:
+	Racun() : _brojRacuna(BrojRacunaCount++)
+	{
+		_brojStavki = 0;
+		_iznosSaPDV = 0;
+		_iznosBezPDV = 0;
+		_izdato = false;
+	}
+
+	//Operator() - Dodaje nove artikle u stavke racuna (ulazni parametri su artikal i kolicina), kolicina nije obavezni parametar;
+	//Voditi racuna o tome da li je racun vec naplacen;
+	//Ukoliko nema dovoljno artikala na stanju, potrebno ispisati odgovarajucu poruku;
+	//Ukoliko artikal vec postoji potrebno je samo uvecati kolicinu za odgovarajucu stavku;
+	//Prilikom svakog dodavanja novog artikla ažurirati vrijednosti atributa _iznosBezPDV i _iznosSaPDV.
+	Racun & operator ()(Artikal & artikal, int kolicina = 1)
+	{
+		if (_brojStavki == 100)
+		{
+			cout << "\nDostigli ste maksimalan broj stavki(100)" << endl;
+			return *this;
+		}
+		else if (_izdato)
+		{
+			cout << "\nRacun je vec naplacen" << endl;
+			return *this;
+		}
+		else if (artikal.GetKolicina() < kolicina)
+		{
+			cout << "\nNema dovoljno artikala na stanju" << endl;
+			return *this;
+		}
+		else
+		{
+			for (size_t i = 0; i < _brojStavki; i++)
+			{
+				if (_stavke[i] == artikal)
+				{
+					_stavke[i] += kolicina;
+					artikal -= kolicina;
+					_iznosBezPDV += kolicina * artikal.GetCijena();
+					_iznosSaPDV = _iznosBezPDV * 1.17;
+					return *this;
+				}
+			}
+			StavkaRacuna novaStavka(artikal, kolicina);
+			artikal -= kolicina;
+			_stavke[_brojStavki++] = novaStavka;
+			_iznosBezPDV += kolicina * artikal.GetCijena();
+			_iznosSaPDV = _iznosBezPDV * 1.17;
+			return *this;
+		}
+	}
+	//Operator-= - Uklanja artikal sa racuna na osnovu njegove šifre.
+	Racun & operator-=(const char * sifra)
+	{
+		for (size_t i = 0; i < _brojStavki; i++)
+		{
+			if (_stavke[i] == sifra)
+			{
+				_iznosBezPDV -= _stavke[i].GetCijena();
+				_iznosSaPDV -= _stavke[i].GetCijena() * 1.17;
+				_stavke[i] += _stavke[i].GetKolicina();
+
+				for (size_t j = i; j < _brojStavki - 1; j++)
+					_stavke[j] = _stavke[j + 1];
+				_brojStavki--;
+				return *this;
+			}
+		}
+		return *this;
+	}
+	//Operator[] - Vraca stavku racuna na osnovu šifre artikla
+	StavkaRacuna & operator [] (char *sifraArtikla)
+	{
+		for (size_t i = 0; i < _brojStavki; i++)
+			if (_stavke[i] == sifraArtikla)
+				return _stavke[i];
+	}
+	//Operator/ - Zaracunava definisani popust na kompletan racun
+	Racun & operator / (float popust)
+	{
+		_iznosBezPDV -= _iznosBezPDV * (popust / 100);
+		_iznosSaPDV -= _iznosSaPDV * (popust / 100);
+		return *this;
+	}
+	//Operator+ - Formira jedan racun na osnovu racuna koji ucestvuju u operaciji +. 
+	//Pri tome se u slucaju ponavljanja artikala mijenja samo kolicina;
+	//Operator implementirati kao globalnu funkciju.
+	friend Racun operator + (Racun &, Racun &);
+	//Funkcija PrintRacun treba ispisati sve stavke racuna zajedno sa iznosom za placanje;
+	//Omoguciti da se unese iznos novca koji je klijent platio, a kao povratnu vrijednost funkcije vratiti iznos kusura.
+	double PrintRacun()
+	{
+		cout << crt << "Broj racuna: " << _brojRacuna << crt;
+		if (_brojStavki > 0)
+			cout << "\t:::STAVKE RACUNA:::\n";
+		for (size_t i = 0; i < _brojStavki; i++)
+			cout << _stavke[i] << endl;
+		cout << crt << "Iznos bez PDV-a: " << _iznosBezPDV << " KM" << endl;
+		cout << "PDV (17%): " << _iznosBezPDV * 0.17 << " KM" << endl;
+		cout << "UKUPNO ZA PLATITI: " << _iznosSaPDV << " KM" << endl;
+
+		double iznos = 0;
+		do
+		{
+			cout << "\nUnesite iznos novca koji je klijent platio: ";
+			cin >> iznos;
+			cin.ignore();
+		} while (iznos < _iznosSaPDV);
+
+		_izdato = true;
+		return (iznos - _iznosSaPDV);
+	}
+};
+
+Racun operator + (Racun & prvi, Racun & drugi)
+{
+	Racun noviRacun;
+	for (size_t i = 0; i < prvi._brojStavki; i++)
+		noviRacun(prvi._stavke[i].GetArtikal(), prvi._stavke[i].GetKolicina());
+	for (size_t i = 0; i < drugi._brojStavki; i++)
+		noviRacun(drugi._stavke[i].GetArtikal(), drugi._stavke[i].GetKolicina());
+	return noviRacun;
+}
+
+int Racun::BrojRacunaCount = 1;
+
+void main()
+{
+
+
+	Artikal sok("Cappy Orange", "11-22-33", 1.2, 14);
+	Artikal cokolada("Milka Nougat", "55-11-44", 1.4, 17);
+	Artikal tops("Tops", "21-43-81", 0.9, 20);
+	Artikal mars("Mars", "55-55-55", 1.1, 13);
+
+	Racun r1;
+	r1(sok);
+	r1(cokolada, 2);
+	r1(tops, 5);
+	r1(sok);
+
+	r1 -= "55-11-44"; // uklanja cokoladu sa racuna
+
+	r1 / 10;
+	cout << "Klijentu treba vratiti: " << r1.PrintRacun() << " KM kusura";
+
+	r1(cokolada); // error , racun je vec izdat
+
+	Racun r2;
+	r2(tops, 3);
+	r2(mars, 2);
+
+	cout << "Klijentu treba vratiti: " << (r1 + r2).PrintRacun() << " KM"<<endl;
+	system("pause");
+}

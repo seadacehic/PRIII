@@ -1,0 +1,639 @@
+#include<iostream>
+using namespace std;
+
+const char *crt = "\n-----------------------------------------------\n";
+bool debug = false;
+enum Status {        ZAHTJEV_ZAPRIMLJEN,      ODUSTAO,         ODBIJENA,    IZDATA,    ISTEKLA,   PONISTENA };
+const char* StatusString[] = { "ZAHTJEV ZAPRIMLJEN", "ODUSTAO", "ODBIJENA", "IZDATA", "ISTEKLA", "PONISTENA" };
+enum Sortiranje { RASTUCI, OPADAJUCI };
+enum Drzava { SAD, AUSTRALIJA, ENGLESKA, UNDEFINED };
+const char* DrzaveString[] = { "SAD", "AUSTRALIJA", "ENGLESKA", "UNDEFINED" };
+enum Vrsta { POSLOVNA, TURISTICKA };
+
+char* AlocirajNizKaraktera(const char *s) {
+	char *noviString = nullptr;
+	if (s != nullptr) {
+		noviString = new char[strlen(s) + 1];
+		strcpy_s(noviString, strlen(s) + 1, s);
+	}
+	return noviString;
+}
+
+class Datum {
+	int *_dan, *_mjesec, *_godina;
+public:
+	Datum(int dan = 1, int mjesec = 1, int godina = 2000) {
+		_dan = new int(dan);
+		_mjesec = new int(mjesec);
+		_godina = new int(godina);
+	}
+
+	Datum(const Datum &temp) { //copy constructor
+		_dan = new int(*temp._dan);
+		_mjesec = new int(*temp._mjesec);
+		_godina = new int(*temp._godina);
+	}
+
+	Datum(Datum &&temp) { //move constructor
+		_dan = temp._dan;	
+		temp._dan = nullptr;
+
+		_mjesec = temp._mjesec;
+		temp._mjesec = nullptr;
+
+		_godina = temp._godina;
+		temp._godina = nullptr;
+	}
+
+	Datum& operator=(const Datum &temp) { //operator=
+		if (this != &temp) {
+			*_dan = *temp._dan;
+			*_mjesec = *temp._mjesec;
+			*_godina = *temp._godina;
+		}
+		return *this;
+	}
+	
+	bool PrestupnaGodina() {
+		return ((*_godina % 4 == 0 && *_godina % 100 != 0) || (*_godina % 400 == 0));
+	}
+
+	friend bool operator==(const Datum &left, const Datum &right) {
+		if (*right._dan != *left._dan) return false;
+		if (*right._mjesec != *left._mjesec) return false;
+		if (*right._godina != *left._godina) return false;
+		return true;
+	}
+
+	int GetBrojDana() const { return *_godina * 10000 + *_mjesec * 100 + *_dan; }
+
+	friend bool operator<(const Datum &left,const Datum &right) {
+		return left.GetBrojDana() < right.GetBrojDana();
+	}
+
+	Datum& operator++() {
+		int mjeseci[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+		mjeseci[1] += PrestupnaGodina();
+
+		(*_dan)++;
+
+		if (*_dan == mjeseci[*_mjesec - 1] + 1) { *_dan = 1; (*_mjesec)++; }  //prelazak u novi mjesec
+		if (*_mjesec == 13) { (*_godina)++; *_mjesec = 1; } //prelazak u novu godinu
+
+		return *this;
+	}
+
+	Datum& operator++(int) {
+		Datum temp(*this);
+		++(*this);
+		return temp;
+	}
+
+	~Datum() {
+		delete _dan; _dan = nullptr;
+		delete _mjesec; _mjesec = nullptr;
+		delete _godina; _godina = nullptr;
+	}
+	
+	friend ostream& operator<< (ostream &COUT, const Datum &obj) {
+		COUT << *obj._dan << "." << *obj._mjesec << "." << *obj._godina;
+		return COUT;
+	}
+};
+
+template<class T>
+class FITKolekcija {
+	T * _elementi;
+	int _trenutno;
+public:
+	FITKolekcija() {
+		_elementi = nullptr;
+		_trenutno = 0;
+	}
+
+	FITKolekcija(const FITKolekcija &temp) {
+		_trenutno = temp._trenutno;
+		_elementi = new T[_trenutno];
+		for (int i = 0; i < _trenutno; i++)
+			_elementi[i] = temp._elementi[i];
+	}
+
+	FITKolekcija(FITKolekcija &&temp) {
+		_trenutno = temp._trenutno;
+		_elementi = temp._elementi;
+		temp._trenutno = 0;
+		temp._elementi = nullptr;
+	}
+
+	FITKolekcija& operator=(const FITKolekcija &temp) {
+		if (this != &temp) {
+			_trenutno = temp._trenutno;
+
+			delete[] _elementi;
+			_elementi = new T[_trenutno];
+
+			for (size_t i = 0; i < _trenutno; i++)
+				_elementi[i] = temp._elementi[i];
+		}
+		return *this;
+	}
+
+	void Dodaj(T temp) {
+		T *tempElementi = new T[_trenutno + 1];
+		for (size_t i = 0; i < _trenutno; i++)
+			tempElementi[i] = _elementi[i];
+		tempElementi[_trenutno] = temp;
+
+		_trenutno++; //povecaj broj elemenata
+		delete[] _elementi; //obrisi stare elemente
+		_elementi = tempElementi; //preusmjeri pointer na novi niz
+	}
+
+	void Sortiraj(Sortiranje tipSortiranja) {
+		for (int i = 0; i < _trenutno - 1; i++) {
+			int index = i;
+			for(int j = i + 1; j < _trenutno; j++)
+				if (tipSortiranja == RASTUCI) {
+
+					if (_elementi[index] > _elementi[j])
+						index = j;
+				}
+				else {
+					if (_elementi[index] < _elementi[j])
+						index = j;
+				}
+			if (index != i) {
+				T tempElement = _elementi[index];
+				_elementi[index] = _elementi[i];
+				_elementi[i] = tempElement;
+			}
+		}
+	}
+
+	~FITKolekcija() {
+		delete[] _elementi; _elementi = nullptr;
+
+	}
+	T * GetT() { return _elementi; }
+	int GetTrenutno() const { return _trenutno; }
+	T GetLast() { return _elementi[_trenutno - 1]; }
+
+	T& operator[](int index) const {
+		//need extra check here
+		return _elementi[index];
+	}
+
+	friend ostream& operator<< (ostream &COUT, FITKolekcija &obj) {
+		for (size_t i = 0; i < obj._trenutno; i++)
+			COUT << obj._elementi[i] << endl;
+		return COUT;
+	}
+};
+
+
+class Viza {
+protected:
+	Drzava _drzava;
+	Datum _vazenjeOD;
+	Datum _vazenjeDO;
+	char * _napomena;
+	// kolekcija promijena statusa vize
+	FITKolekcija<Status> _statusi;
+public:
+	Viza() : _napomena(nullptr), _drzava(UNDEFINED) {}
+
+	Viza(Drzava drzava, Datum _OD, Datum _DO, const char * napomena = nullptr) :_vazenjeDO(_DO), _vazenjeOD(_OD)
+	{
+		if (napomena != nullptr) {
+			_napomena = new char[strlen(napomena) + 1];
+			strcpy_s(_napomena, strlen(napomena) + 1, napomena);
+		}
+		else
+			_napomena = nullptr;
+		_drzava = drzava;
+	}
+
+	Viza(const Viza &temp) : _drzava(temp._drzava), _vazenjeOD(temp._vazenjeOD), _vazenjeDO(temp._vazenjeDO), _statusi(temp._statusi) {
+		_napomena = AlocirajNizKaraktera(temp._napomena);
+	}
+
+	Viza(Viza &&temp) : _drzava(temp._drzava), _vazenjeOD(temp._vazenjeOD), _vazenjeDO(temp._vazenjeDO), _statusi(temp._statusi) {
+		_napomena = temp._napomena;
+		temp._napomena = nullptr;
+	}
+
+	Viza& operator=(const Viza &temp) {
+		if (this != &temp) {
+			delete[] _napomena;
+			_napomena = nullptr;
+			if(temp._napomena != nullptr)
+				_napomena = AlocirajNizKaraktera(temp._napomena);
+
+			_drzava = temp._drzava;
+			_vazenjeOD = temp._vazenjeOD;
+			_vazenjeDO = temp._vazenjeDO;
+
+			_statusi = temp._statusi;
+		}
+		return *this;
+	}
+
+	/*
+	virtual friend bool operator==(const Viza &left, const Viza &right) {
+		//dvije vize su iste ako vrijede za istu drzavu i ako imaju isti vijek trajanja
+		if (left._drzava != right._drzava) return false;
+		if (!(left._vazenjeOD == right._vazenjeOD)) return false;
+		if (!(left._vazenjeDO == right._vazenjeDO)) return false;
+		return true;
+	}
+	*/
+	virtual bool operator==(const Viza &right) {
+		const Viza& left = *this;
+		//dvije vize su iste ako vrijede za istu drzavu i ako imaju isti vijek trajanja
+		if (left._drzava != right._drzava) return false;
+		if (!(left._vazenjeOD == right._vazenjeOD)) return false;
+		if (!(left._vazenjeDO == right._vazenjeDO)) return false;
+		return true;
+	}
+
+
+	friend ostream& operator<<(ostream &COUT,const Viza &v) {
+		COUT << crt << crt;
+		COUT << "Drzava: " << DrzaveString[v._drzava] << endl;
+		COUT << "Datum pocetka: " << v._vazenjeOD << endl;
+		COUT << "Datum zavrsetka: " << v._vazenjeDO << endl;
+		COUT << "Statusi: ";
+		for (int i = 0; i < v.GetStatuse().GetTrenutno(); i++) {
+			COUT << StatusString[v.GetStatuse()[i]];
+			if (i == v.GetStatuse().GetTrenutno() - 1) COUT << endl;
+			else COUT << ", ";
+		}
+		return COUT;
+	}
+
+	virtual bool DodajStatus(Status noviStatus) {
+		_statusi.Dodaj(noviStatus);
+		return true;
+	}
+
+	virtual ~Viza() { delete[] _napomena; _napomena = nullptr; }
+
+	Drzava GetDrzava() { return _drzava; }
+	Datum GetVazenjeOD() { return _vazenjeOD; }
+	Datum GetVazenjeDO() { return _vazenjeDO; }
+	char * GetNapomena() { return _napomena; }
+	Status GetZadnjiStatus() { return _statusi.GetLast(); }
+	const FITKolekcija<Status>& GetStatuse() const { return _statusi; }
+};
+
+class PoslovnaViza : public Viza {
+	char* _kompanija; //naziv kompanije koja potvrduje da posluje sa aplikantom
+public:
+	PoslovnaViza() : _kompanija(nullptr) {}
+
+	PoslovnaViza(Drzava drzava, Datum _OD, Datum _DO, const char *kompanija) 
+		: Viza(drzava, _OD, _DO)
+	{
+		if (kompanija != nullptr) {
+			_kompanija = new char[strlen(kompanija) + 1];
+			strcpy_s(_kompanija, strlen(kompanija) + 1, kompanija);
+		}
+		else
+			_kompanija = nullptr;
+	}
+
+	PoslovnaViza(const PoslovnaViza &temp) : Viza(temp) {
+		_kompanija = AlocirajNizKaraktera(temp._kompanija);
+	}
+
+	PoslovnaViza(PoslovnaViza &&temp) : Viza(temp) {
+		_kompanija = temp._kompanija;
+		temp._kompanija = nullptr;
+	}
+
+	PoslovnaViza& operator=(const PoslovnaViza &temp) {
+		if (this != &temp) {
+			delete[] _kompanija;
+			_kompanija = AlocirajNizKaraktera(temp._kompanija);
+			Viza::operator=(temp);
+		}
+		return *this;
+	}
+
+
+	//za poslovnu vizu mozemo odmah dodati sljedece statuse: ZAHTJEV_ZAPRIMLJEN, ODBIJEN, ODOBREN,
+	//da bismo dodali ODUSTAO potrebno je imati dodan status ZAHTJEV_ZAPRIMLJEN
+	//da bismo dodali ISTEKLA potrebno je imati dodan status IZADATA
+	//da bismo dodali PONISTENA potrebno je imati dodan status IZADATA
+	bool DodajStatus(Status NoviStatus) { 
+		int PotrebniStatusPoslovna[] = { -1, ZAHTJEV_ZAPRIMLJEN, -1, -1, IZDATA, IZDATA };
+		if (PotrebniStatusPoslovna[NoviStatus] == (-1) || PotrebniStatusPoslovna[NoviStatus] == _statusi.GetLast()) {
+			_statusi.Dodaj(NoviStatus);
+			return true;
+		}
+		return false;
+	}
+
+	bool operator==(const PoslovnaViza &right) {
+		const PoslovnaViza &left = *this;
+		return ((Viza)left == (Viza)right);
+	}
+
+	friend ostream& operator<<(ostream &COUT, const PoslovnaViza &tv) {
+		COUT << (Viza)tv;
+		COUT << "Kompanija: " << tv._kompanija << endl;
+		return COUT;
+	}
+
+	~PoslovnaViza() { delete[] _kompanija; _kompanija = nullptr; }
+};
+
+class TuristickaViza : public Viza {
+	char* _adresa; //adresa hotele ili drugog smještaja na kojoj ce aplikant boraviti
+public:
+	TuristickaViza() : _adresa(nullptr) {}
+
+	TuristickaViza(Drzava drzava, Datum _OD, Datum _DO, const char *adresa)
+		: Viza(drzava, _OD, _DO) {
+		_adresa = AlocirajNizKaraktera(adresa);
+	}
+
+	TuristickaViza(const TuristickaViza &temp) : Viza(temp){
+		_adresa = AlocirajNizKaraktera(temp._adresa);
+	}
+
+	TuristickaViza(TuristickaViza &&temp) : Viza(temp) {
+		_adresa = temp._adresa;
+		temp._adresa = nullptr;
+	}
+
+	TuristickaViza& operator=(const TuristickaViza &temp) {
+		if (this != &temp) {
+			delete[] _adresa;
+			_adresa = AlocirajNizKaraktera(temp._adresa);
+
+			Viza::operator=(temp);
+		}
+		return *this;
+	}
+
+	
+	//za turisticku vizu mozemo odmah dodati samo status ZAHTJEV_ZAPRIMLJEN
+	//da bismo dodali ODUSTAO potrebno je prethodno dodati status ZAHTJEV_ZAPRIMLJEN
+	//da bismo dodali ODBIJENA potrebno je prethodno dodati status ZAHTJEV_ZAPRIMLJEN
+	//da bismo dodali IZADATA potrebno je prethodno dodati status ZAHTJEV_ZAPRIMLJEN
+	//da bismo dodali ISTEKLA potrebno je prethodno dodati status IZADATA
+	//da bismo dodali PONISTENA potrebno je prethodno dodati status IZADATA
+	bool DodajStatus(Status NoviStatus) {
+		int PotrebniStatusTuristicka[] = { -1, ZAHTJEV_ZAPRIMLJEN, ZAHTJEV_ZAPRIMLJEN, ZAHTJEV_ZAPRIMLJEN, IZDATA, IZDATA };
+		if (PotrebniStatusTuristicka[NoviStatus] == (-1) || PotrebniStatusTuristicka[NoviStatus] == _statusi.GetLast()) {
+			_statusi.Dodaj(NoviStatus);
+			return true;
+		}
+		return false;
+	}
+
+	bool operator==(const TuristickaViza &right) {
+		const TuristickaViza &left = *this;
+		return ((Viza)left == (Viza)right);
+	}
+
+	friend ostream& operator<<(ostream &COUT, const TuristickaViza &tv) {
+		COUT << (Viza)tv;
+		COUT << "Adresa: " << tv._adresa << endl;
+		return COUT;
+	}
+
+	~TuristickaViza() { delete[] _adresa; _adresa = nullptr; }
+
+};
+
+class Aplikant {
+	char * _imePrezime;
+	Datum * _datumRodjenja;
+	char * _brojPasosa;
+	FITKolekcija<Viza*> _vize;
+
+	bool PostojiVazeca(Datum OD, Datum DO, Drzava drzava) {
+		for (int i = 0; i < _vize.GetTrenutno(); i++)
+			if (_vize[i]->GetDrzava() == drzava && _vize[i]->GetZadnjiStatus() == IZDATA)
+				if ((OD < _vize[i]->GetVazenjeDO() && _vize[i]->GetVazenjeDO() < DO) ||
+					(OD < _vize[i]->GetVazenjeOD() && _vize[i]->GetVazenjeOD() < DO))
+					return true;
+		return false;
+	}
+	
+public:
+	Aplikant(const char * imePrezime, Datum datumRodjenja, const char * brojPasosa) : _datumRodjenja(new Datum(datumRodjenja)) {
+		_imePrezime = AlocirajNizKaraktera(imePrezime);
+		_brojPasosa = AlocirajNizKaraktera(brojPasosa);
+	}
+
+	Aplikant(const Aplikant &temp) : _datumRodjenja(new Datum(*temp._datumRodjenja)) {
+		_imePrezime = AlocirajNizKaraktera(temp._imePrezime);
+		_brojPasosa = AlocirajNizKaraktera(temp._brojPasosa);
+
+		for (int i = 0; i < temp._vize.GetTrenutno(); i++)
+			if (dynamic_cast<TuristickaViza*>(temp._vize[i]) != nullptr)
+				_vize.Dodaj(new TuristickaViza(*(TuristickaViza*)temp._vize[i]));
+			else
+				_vize.Dodaj(new PoslovnaViza(*(PoslovnaViza*)temp._vize[i]));
+	}
+
+	Aplikant(Aplikant &&temp){
+		_imePrezime = temp._imePrezime;
+		temp._imePrezime = nullptr;
+
+		_brojPasosa = temp._brojPasosa;
+		temp._brojPasosa = nullptr;
+
+		_datumRodjenja = temp._datumRodjenja;
+		temp._datumRodjenja = nullptr;
+
+		for (int i = 0; i < temp._vize.GetTrenutno(); i++) {
+			_vize.Dodaj(temp._vize[i]);
+			temp._vize[i] = nullptr;
+		}
+	}
+
+	~Aplikant() {
+		delete[]_imePrezime; _imePrezime = nullptr;
+		delete[]_brojPasosa; _brojPasosa = nullptr;
+		delete _datumRodjenja; _datumRodjenja = nullptr;
+		for (int i = 0; i < _vize.GetTrenutno(); i++)
+			delete _vize[i];
+	}
+
+	bool DodajVizu(Viza *NovaViza) {
+		if (PostojiVazeca(NovaViza->GetVazenjeOD(), NovaViza->GetVazenjeDO(), NovaViza->GetDrzava()))
+			return false;
+
+		if (dynamic_cast<TuristickaViza*>(NovaViza) != nullptr)
+			_vize.Dodaj(new TuristickaViza(*(TuristickaViza*)NovaViza));
+		else {
+			PoslovnaViza *poslovna = dynamic_cast<PoslovnaViza*>(NovaViza);
+			_vize.Dodaj(new PoslovnaViza(*poslovna));
+		}
+		return true;
+	}
+
+	bool DodajStatus(Viza *DodanaViza, Status NoviStatus) {
+		for (int i = 0; i < _vize.GetTrenutno(); i++) {
+			PoslovnaViza *poslovna = dynamic_cast<PoslovnaViza*>(_vize[i]);
+			TuristickaViza *turisticka = dynamic_cast<TuristickaViza*>(_vize[i]);
+
+			if (poslovna != nullptr && dynamic_cast<PoslovnaViza*>(DodanaViza) != nullptr)
+				if (*poslovna == (*(PoslovnaViza*)DodanaViza))
+					return poslovna->DodajStatus(NoviStatus);
+				
+			if (turisticka != nullptr && dynamic_cast<TuristickaViza*>(DodanaViza) != nullptr)
+				if (*turisticka == (*(TuristickaViza*)DodanaViza))
+					return turisticka->DodajStatus(NoviStatus);
+		}
+		return false;
+	}
+
+	FITKolekcija<Viza*> GetVize() { return _vize; }
+
+	friend ostream& operator<<(ostream &COUT, const Aplikant &a) {
+		COUT << "Ime i prezime: " << a._imePrezime << endl;
+		COUT << "Pasos: " << a._brojPasosa << endl;
+		COUT << "Datum rodenja: " << *a._datumRodjenja << endl;
+		return COUT;
+	}
+};
+
+int main() {
+
+	/****************************************************************************
+	1. SVE KLASE TREBAJU POSJEDOVATI ADEKVATAN DESTRUKTOR
+	2. NAMJERNO IZOSTAVLJANJE KOMPLETNIH I/ILI POJEDINIH DIJELOVA DESTRUKTORA KOJI UZROKUJU RUNTIME ERROR CE BITI OZNACENO KAO "RE"
+	3. SPAŠAVAJTE PROJEKAT KAKO BI SE SPRIJECILO GUBLJENJE URAÐENOG ZADATKA
+	4. PROGRAMSKI CODE SE TAKOÐER NALAZI U FAJLU CODE.TXT
+	5. NAZIVI FUNKCIJA, TE BROJ I TIP PARAMETARA MORAJU BITI IDENTICNI ONIMA KOJI SU KORIŠTENI U TESTNOM CODE-U, OSIM U SLUCAJU DA POSTOJI ADEKVATAN RAZLOG ZA NJIHOVU MODIFIKACIJU. OSTALE, POMOCNE FUNKCIJE MOŽETE IMENOVATI I DODAVATI PO ŽELJI.
+	6. IZUZETAK BACITE U FUNKCIJAMA U KOJIMA JE TO NAZNACENO.
+	****************************************************************************/
+
+	Datum dat01042018(1, 4, 2018), dat01052018(1, 5, 2018), dat01082018(1, 8, 2018), dat01062018(1, 6, 2018), dat01092018(1, 9, 2018);
+
+	Aplikant jasmin("Jasmin Azemovic", Datum(15, 5, 1979), "BS6985645");
+	
+	//od maja do augusta - SAD
+	Viza *prvaPoslovna = new PoslovnaViza(SAD, dat01052018, dat01082018, "Microsoft"); 
+	//od juna do septembra - SAD
+	Viza *drugaPoslovna = new PoslovnaViza(SAD, dat01062018, dat01092018, "Microsoft");
+	//od aprila do juna - SADA
+	Viza *trecaPoslovna = new PoslovnaViza(SAD, dat01042018, dat01062018, "Microsoft");
+	//od aprila do juna - ENGLESKA
+	Viza *cetvrtaPoslovna = new PoslovnaViza(ENGLESKA, dat01042018, dat01062018, "Microsoft");
+	
+	//od aprila do maja - ENGLESKA
+	Viza *prvaTuristicka = new TuristickaViza(ENGLESKA, dat01042018, dat01052018, "Whitehall Pl, London SW1A 2BD, UK");
+	//od juna do septembra - ENGLESKA
+	Viza *drugaTuristicka = new TuristickaViza(ENGLESKA, dat01062018, dat01092018, "Whitehall Pl, London SW1A 2BD, UK");
+
+	
+
+	/*
+		NOVA VIZA SE NE MOŽE DODATI UKOLIKO POSTOJI VAŽECA VIZA (POJAM VAŽECA PODRAZUMIJEVA DA JE 
+	    POSLJEDNJI STATUS VIZE BIO IZDATA) U PERIODU U KOJEM SE NOVA VIZA POKUSAVA IZDATI ZA ISTU DRZAVU
+		
+		NPR. NEKA JE PRETHODNO IZDANA VIZA "A" ZA ENGLESKU U PERIODU VAZENJA OD 1.5.2018. DO 1.8.2018.
+		UKOLIKO SE POKUSA IZDATI NOVA VIZA "B" ZA ENGLESKU U PERIODU VAZENJA OD 1.6.2018. DO 1.9.2018. FUNKCIJA DodajVizu VRACA FALSE
+		UKOLIKO SE POKUSA IZDATI NOVA VIZA "C" ZA USA U PERIODU VAZENJA OD 1.6.2018. DO 1.9.2018. FUNKCIJA DodajVizu VRACA TRUE (DRUGA DRZAVA)
+	*/
+
+	
+	if (jasmin.DodajVizu(prvaPoslovna))
+		cout << "Podaci o vizi uspjesno zaprimljeni!" << endl;
+	else
+		cout << "Viza NIJE dodana!" << endl;
+
+	if (jasmin.DodajStatus(prvaPoslovna, ZAHTJEV_ZAPRIMLJEN))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajStatus(prvaPoslovna, IZDATA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajVizu(drugaPoslovna))//ne moze da doda vizu zbog preklapanja datuma
+		cout << "Podaci o vizi uspjesno zaprimljeni!" << endl;
+	else
+		cout << "Viza NIJE dodana!" << endl;
+
+	if (jasmin.DodajVizu(trecaPoslovna)) //ne moze da doda vizu zbog preklapanja datuma
+		cout << "Podaci o vizi uspjesno zaprimljeni!" << endl;
+	else
+		cout << "Viza NIJE dodana!" << endl;
+	
+	if (jasmin.DodajStatus(prvaPoslovna, PONISTENA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajVizu(drugaPoslovna))
+		cout << "Podaci o vizi uspjesno zaprimljeni!" << endl;
+	else
+		cout << "Viza NIJE dodana!" << endl;
+
+	if (jasmin.DodajStatus(drugaPoslovna, ODUSTAO))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajStatus(drugaPoslovna, IZDATA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajStatus(cetvrtaPoslovna, IZDATA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajVizu(cetvrtaPoslovna))
+		cout << "Podaci o vizi uspjesno zaprimljeni!" << endl;
+	else
+		cout << "Viza NIJE dodana!" << endl;
+
+	if (jasmin.DodajStatus(cetvrtaPoslovna, IZDATA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajVizu(prvaTuristicka))
+		cout << "Podaci o vizi uspjesno zaprimljeni!" << endl;
+	else
+		cout << "Viza NIJE dodana!" << endl;
+
+	if (jasmin.DodajVizu(drugaTuristicka))
+		cout << "Podaci o vizi uspjesno zaprimljeni!" << endl;
+	else
+		cout << "Viza NIJE dodana!" << endl;
+
+	if (jasmin.DodajStatus(prvaTuristicka, IZDATA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+	
+	if (jasmin.DodajStatus(prvaTuristicka, ZAHTJEV_ZAPRIMLJEN))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+	
+	if (jasmin.DodajStatus(prvaTuristicka, IZDATA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	if (jasmin.DodajStatus(prvaTuristicka, ISTEKLA))
+		cout << "Status vize uspjesno promijenjen!" << endl;
+	else
+		cout << "Jasmin NE POSJEDUJE evidentiranu trazenu vizu ili status vize nema odgovarajucu vrijednost!" << endl;
+
+	system("pause");
+	return 0;
+}
