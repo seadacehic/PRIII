@@ -1,2 +1,2 @@
 # PRIII
-Zadaci za instruktivnu nastavu
+Zadaci za demonstrativnu nastavu
